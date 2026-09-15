@@ -17,6 +17,11 @@ const DEFAULTS = {
   autoCopy: true,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   windowBounds: null,
+  fontSize: 14,
+  opacity: 0.96,
+  autoStart: false,
+  alwaysOnTop: true,
+  temperature: 0.4,
 };
 
 let win = null;
@@ -148,7 +153,7 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'ui', 'index.html'));
   win.once('ready-to-show', () => win.show());
   // 跨空间悬浮：桌面空间和全屏应用之上都可见
-  win.setAlwaysOnTop(true, 'floating');
+  win.setAlwaysOnTop(config.alwaysOnTop !== false, 'floating');
   try {
     win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   } catch {}
@@ -175,6 +180,11 @@ function toggleWindow() {
 ipcMain.handle('settings:get', () => config);
 ipcMain.handle('settings:save', (e, patch) => {
   saveConfig(patch || {});
+  if (patch && 'autoStart' in patch) {
+    try {
+      app.setLoginItemSettings({ openAtLogin: !!patch.autoStart });
+    } catch {}
+  }
   return true;
 });
 ipcMain.handle('copy:text', (e, t) => {
@@ -218,6 +228,7 @@ ipcMain.handle('chat:send', async (e, userText) => {
       model: config.model,
       systemPrompt: config.systemPrompt,
       userText,
+      temperature: typeof config.temperature === 'number' ? config.temperature : undefined,
       signal: ctl.signal,
       onDelta: (d) => {
         if (!e.sender.isDestroyed()) e.sender.send('chat:delta', d);

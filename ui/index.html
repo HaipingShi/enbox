@@ -38,6 +38,7 @@
     </main>
 
     <aside id="settingsPanel" class="hidden">
+      <div class="group">接口</div>
       <div class="field">
         <label>API 地址（OpenAI 兼容）</label>
         <input id="fBaseUrl" type="text" placeholder="https://api.openai.com/v1" spellcheck="false" />
@@ -54,14 +55,37 @@
         <label>System Prompt（决定它的行为，可自由修改）</label>
         <textarea id="fSystem" rows="9" spellcheck="false"></textarea>
       </div>
+
+      <div class="group">外观</div>
+      <div class="slider-row">
+        <label>字体大小</label>
+        <input id="fFontSize" type="range" min="12" max="20" step="1" />
+        <span class="slider-val" id="fontSizeVal">14px</span>
+      </div>
+      <div class="slider-row">
+        <label>窗口不透明度</label>
+        <input id="fOpacity" type="range" min="50" max="100" step="5" />
+        <span class="slider-val" id="opacityVal">95%</span>
+      </div>
+
+      <div class="group">行为</div>
       <label class="check"><input id="fAutoCopy" type="checkbox" /> 翻译完成后自动复制英文</label>
+      <label class="check"><input id="fAutoStart" type="checkbox" /> 开机自启动</label>
+      <label class="check"><input id="fAlwaysTop" type="checkbox" /> 窗口置顶（悬浮在最上层）</label>
+
+      <div class="group">高级</div>
+      <div class="field">
+        <label>温度 temperature（0 = 稳定统一，1 = 更有创造性）</label>
+        <input id="fTemp" type="number" min="0" max="2" step="0.1" />
+      </div>
+
       <div class="row end">
         <button id="cancelSettings" class="ghost">取消</button>
         <button id="saveSettings" class="primary">保存</button>
       </div>
       <p class="tip">
         配置保存在本地 config.json。全局热键 ⌃⌘E 呼出/隐藏；把窗口拖到屏幕左/右边缘自动吸附成小条，点小条还原；
-        标题栏 – 折叠成小球，点小球还原，右键小球退出。
+        标题栏 – 折叠成小球，点小球还原，右键小球退出。字体大小也可用 ⌘+ / ⌘- / ⌘0 快速调节。
       </p>
     </aside>
   </div>

@@ -1,3 +1,7 @@
+:root {
+  --fs: 14px;
+  --bg-a: 0.96;
+}
 * {
   box-sizing: border-box;
   margin: 0;
@@ -8,7 +12,7 @@ body {
   height: 100%;
   background: transparent;
   font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  font-size: 13px;
+  font-size: var(--fs);
   color: #e8eaf0;
   overflow: hidden;
   user-select: none;
@@ -24,7 +28,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: rgba(22, 24, 30, 0.96);
+  background: rgba(22, 24, 30, var(--bg-a));
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 14px;
   overflow: hidden;
@@ -88,7 +92,7 @@ main {
 textarea,
 input {
   font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs);
   color: #e8eaf0;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.09);
@@ -220,6 +224,42 @@ button.ghost {
   gap: 6px;
   font-size: 12.5px;
   color: #c6ccd9;
+}
+.group {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slider-row > label {
+  flex: none;
+  width: 5.5em;
+  font-size: 12px;
+  color: #aab1c2;
+}
+.slider-row input[type='range'] {
+  flex: 1;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  accent-color: #4f8cff;
+}
+.slider-val {
+  flex: none;
+  width: 3.2em;
+  text-align: right;
+  font-size: 11px;
+  color: #8a93a6;
+  font-variant-numeric: tabular-nums;
 }
 .row.end {
   display: flex;
