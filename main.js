@@ -3,12 +3,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { streamChat } = require('./lib/sse');
 
-const DEFAULT_SYSTEM_PROMPT = `You are my English coach. I type my thoughts in Chinese (sometimes mixed with English or tech terms); you re-express them in English that I can send directly to an AI assistant or a coding agent.
-
-Rules:
-1. FIRST output the English version only — natural, concise, idiomatic, ready to send. Do NOT answer my question; only re-express it. Preserve technical terms, code identifiers and file paths as-is. If my input is already mostly English, polish it instead.
-2. THEN, after one blank line, add 1-3 short learning notes in Chinese. Each note is a single line starting with "💡": a more idiomatic phrasing, a useful expression, or a small grammar point. Skip the notes if there is nothing worth pointing out.
-The first block must stay clean and copy-paste ready — never merge it with the notes.`;
+const { DEFAULT_SYSTEM_PROMPT, upgradeSystemPrompt, buildTranslationPrompt } = require('./lib/translation');
 
 const DEFAULTS = {
   baseUrl: 'https://api.openai.com/v1',
@@ -38,7 +33,8 @@ function configPath() {
 }
 function loadConfig() {
   try {
-    return { ...DEFAULTS, ...JSON.parse(fs.readFileSync(configPath(), 'utf8')) };
+    const saved = JSON.parse(fs.readFileSync(configPath(), 'utf8'));
+    return { ...DEFAULTS, ...saved, systemPrompt: upgradeSystemPrompt(saved.systemPrompt) };
   } catch {
     return { ...DEFAULTS };
   }
@@ -58,26 +54,20 @@ function workAreaOf(b) {
   return screen.getDisplayNearestPoint({ x: b.x, y: b.y }).workArea;
 }
 
-// 断言「置顶 + 跨全部空间（含全屏应用）」，在显示/移动后重复调用兜底
+// Updating the floating level does not require changing Space membership.
 function keepFloating() {
   if (!win) return;
   win.setAlwaysOnTop(config.alwaysOnTop !== false, 'floating');
-  try {
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  } catch {}
 }
 
-// 关键修复：先解除全空间绑定再显示，让窗口回到「当前」空间，随后重新断言跨空间。
-// 直接 show() 的 canJoinAllSpaces 窗口可能仍滞留在它上次所在的空间（macOS 已知怪癖），
-// 表现为「进程活着、浮球在所有屏幕上都看不见」。
+// Keep Space membership stable: toggling it transforms the macOS process and
+// temporarily hides its windows. In particular, never do that in a show handler.
 function showOnCurrentSpace() {
   if (!win) return;
-  try {
-    win.setVisibleOnAllWorkspaces(false);
-  } catch {}
+  if (win.isMinimized()) win.restore();
+  keepFloating();
   win.show();
   win.focus();
-  keepFloating();
 }
 
 // 菜单栏「显示主窗口」：任意状态下恢复完整窗口并聚焦
@@ -90,10 +80,12 @@ function showMain() {
 // 菜单栏「浮球归位」：把折叠球移动到右上角固定位置，找不到浮球时兜底
 function homeBall() {
   if (!win) return;
-  if (view === 'main') fold();
+  fold();
+  const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  setBoundsSafe({ width: 48, height: 48,
+    x: Math.max(wa.x, wa.x + wa.width - 96),
+    y: Math.max(wa.y, Math.min(wa.y + 140, wa.y + wa.height - 48)) });
   showOnCurrentSpace();
-  const wa = screen.getPrimaryDisplay().workArea;
-  setBoundsSafe({ ...win.getBounds(), x: wa.x + wa.width - 96, y: wa.y + 140 });
 }
 
 function dock(side) {
@@ -105,8 +97,9 @@ function dock(side) {
     side === 'left'
       ? { x: wa.x, y: Math.round(wa.y + wa.height / 2 - 60), width: 14, height: 120 }
       : { x: wa.x + wa.width - 14, y: Math.round(wa.y + wa.height / 2 - 60), width: 14, height: 120 };
-  setBoundsSafe(rect);
   view = 'docked';
+  win.setMinimumSize(14, 48);
+  setBoundsSafe(rect);
   win.webContents.send('view', 'docked');
 }
 
@@ -115,13 +108,14 @@ function fold() {
   if (view === 'main') savedBounds = win.getBounds();
   const b = win.getBounds();
   const wa = workAreaOf(b);
+  view = 'ball';
+  win.setMinimumSize(48, 48);
   setBoundsSafe({
     x: Math.min(Math.max(b.x, wa.x), wa.x + wa.width - 48),
     y: Math.min(Math.max(b.y, wa.y), wa.y + wa.height - 48),
     width: 48,
     height: 48,
   });
-  view = 'ball';
   win.webContents.send('view', 'ball');
 }
 
@@ -134,8 +128,9 @@ function expand() {
   if (r.x + r.width >= wa.x + wa.width - 8) r.x = wa.x + wa.width - r.width - 24;
   r.x = Math.min(Math.max(r.x, wa.x), wa.x + wa.width - r.width);
   r.y = Math.min(Math.max(r.y, wa.y), wa.y + wa.height - r.height);
-  setBoundsSafe(r);
   view = 'main';
+  setBoundsSafe(r);
+  win.setMinimumSize(320, 400);
   keepFloating();
   win.webContents.send('view', 'main');
 }
@@ -193,9 +188,10 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'ui', 'index.html'));
   win.once('ready-to-show', () => win.show());
   // 跨空间悬浮：桌面空间和全屏应用之上都可见
+  if (process.platform !== 'win32') {
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  }
   keepFloating();
-  // 空间切换/重组后可能丢失 canJoinAllSpaces 属性，每次显示时重新断言
-  win.on('show', keepFloating);
   win.on('moved', onMoved);
   win.on('move', saveBoundsSoon);
   win.on('resize', saveBoundsSoon);
@@ -230,13 +226,13 @@ ipcMain.handle('copy:text', (e, t) => {
 ipcMain.handle('win:fold', () => fold());
 ipcMain.handle('win:expand', () => expand());
 ipcMain.on('win:moveBy', (e, dx, dy) => {
-  if (!win) return;
+  if (!win || view === 'main' || !Number.isFinite(dx) || !Number.isFinite(dy)) return;
   const p = win.getPosition();
   const b = win.getBounds();
-  const wa = workAreaOf(b);
-  // 留 20px 可见部分，防止小球被拖出屏幕找不回
-  const cx = Math.min(Math.max(p[0] + Math.round(dx), wa.x - b.width + 20), wa.x + wa.width - 20);
-  const cy = Math.min(Math.max(p[1] + Math.round(dy), wa.y), wa.y + wa.height - 20);
+  const wa = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  // Keep the whole ball visible, including when moving between displays.
+  const cx = Math.max(wa.x, Math.min(p[0] + Math.round(dx), wa.x + wa.width - b.width));
+  const cy = Math.max(wa.y, Math.min(p[1] + Math.round(dy), wa.y + wa.height - b.height));
   win.setPosition(cx, cy);
 });
 ipcMain.handle('win:dock', (e, side) => dock(side === 'right' ? 'right' : 'left'));
@@ -262,7 +258,7 @@ ipcMain.handle('chat:send', async (e, userText) => {
       baseUrl: config.baseUrl,
       apiKey: config.apiKey,
       model: config.model,
-      systemPrompt: config.systemPrompt,
+      systemPrompt: buildTranslationPrompt(config.systemPrompt, userText),
       userText,
       temperature: typeof config.temperature === 'number' ? config.temperature : undefined,
       signal: ctl.signal,

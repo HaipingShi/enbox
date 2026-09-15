@@ -19,7 +19,7 @@ function flashStatus(t) {
   setTimeout(() => setStatus(lastStatus), 1600);
 }
 
-function englishPart(t) {
+function translationPart(t) {
   const i = t.search(/^💡/m);
   return (i > 0 ? t.slice(0, i) : t).trim();
 }
@@ -56,11 +56,10 @@ window.enbox.onView((v) => {
 /* 小球/贴边条：手动拖拽 + 点击判定（拖动距离 <5px 视为点击 → 还原）
    使用 Pointer Capture 确保拖拽结束事件必达，避免拖拽状态卡死导致浮球「跟鼠标跑」 */
 let ballDrag = null;
-let movePending = false;
 const ballView = $('#ballView');
 ballView.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
-  ballDrag = { sx: e.screenX, sy: e.screenY, moved: false };
+  ballDrag = { sx: e.screenX, sy: e.screenY, lastX: e.screenX, lastY: e.screenY, moved: false };
   try {
     ballView.setPointerCapture(e.pointerId);
   } catch {}
@@ -70,12 +69,11 @@ ballView.addEventListener('pointermove', (e) => {
   const dx = e.screenX - ballDrag.sx;
   const dy = e.screenY - ballDrag.sy;
   if (!ballDrag.moved && Math.hypot(dx, dy) > 4) ballDrag.moved = true;
-  if (ballDrag.moved && !movePending) {
-    movePending = true;
-    window.enbox.moveBy(dx, dy);
-    requestAnimationFrame(() => {
-      movePending = false;
-    });
+  if (ballDrag.moved) {
+    // moveBy consumes increments, not the total distance since pointerdown.
+    window.enbox.moveBy(e.screenX - ballDrag.lastX, e.screenY - ballDrag.lastY);
+    ballDrag.lastX = e.screenX;
+    ballDrag.lastY = e.screenY;
   }
 });
 function endBallDrag() {
@@ -84,6 +82,9 @@ function endBallDrag() {
 }
 ballView.addEventListener('pointerup', endBallDrag);
 ballView.addEventListener('pointercancel', () => {
+  ballDrag = null;
+});
+ballView.addEventListener('lostpointercapture', () => {
   ballDrag = null;
 });
 window.addEventListener('blur', () => {
@@ -120,8 +121,8 @@ async function doSend() {
   if (res.ok) {
     setStatus(`完成 · ${(res.ms / 1000).toFixed(1)}s`);
     if (cfg.autoCopy) {
-      await window.enbox.copy(englishPart(res.text));
-      flashStatus('已复制英文 ✓');
+      await window.enbox.copy(translationPart(res.text));
+      flashStatus('已复制译文 ✓');
     }
   } else if (res.error === '已停止') {
     outputEl.value += '\n[已停止]';
@@ -141,7 +142,7 @@ inputEl.addEventListener('keydown', (e) => {
   }
 });
 $('#copyBtn').addEventListener('click', async () => {
-  const t = englishPart(outputEl.value);
+  const t = translationPart(outputEl.value);
   if (!t) return;
   await window.enbox.copy(t);
   flashStatus('已复制 ✓');

@@ -18,7 +18,7 @@
     </header>
 
     <main>
-      <textarea id="input" rows="3" placeholder="用中文描述你的想法，Enter 直接翻译" spellcheck="false"></textarea>
+      <textarea id="input" rows="3" placeholder="自动识别：中文 → 英文，其他语言 → 中文；Enter 翻译" spellcheck="false"></textarea>
       <div class="toolbar">
         <span class="hint">Enter 发送 · Shift+Enter 换行</span>
         <span class="spacer"></span>
@@ -31,9 +31,9 @@
         <div class="out-head">
           <span id="status">就绪</span>
           <span class="spacer"></span>
-          <button id="copyBtn" class="ghost">复制英文</button>
+          <button id="copyBtn" class="ghost">复制译文</button>
         </div>
-        <textarea id="output" placeholder="English will appear here…" spellcheck="false"></textarea>
+        <textarea id="output" placeholder="译文将在这里显示…" spellcheck="false"></textarea>
       </section>
     </main>
 
@@ -52,7 +52,7 @@
         <input id="fModel" type="text" placeholder="gpt-4o-mini" spellcheck="false" />
       </div>
       <div class="field grow">
-        <label>System Prompt（决定它的行为，可自由修改）</label>
+        <label>System Prompt（自定义风格，翻译方向自动识别）</label>
         <textarea id="fSystem" rows="9" spellcheck="false"></textarea>
       </div>
 
@@ -69,7 +69,7 @@
       </div>
 
       <div class="group">行为</div>
-      <label class="check"><input id="fAutoCopy" type="checkbox" /> 翻译完成后自动复制英文</label>
+      <label class="check"><input id="fAutoCopy" type="checkbox" /> 翻译完成后自动复制译文</label>
       <label class="check"><input id="fAutoStart" type="checkbox" /> 开机自启动</label>
       <label class="check"><input id="fAlwaysTop" type="checkbox" /> 窗口置顶（悬浮在最上层）</label>
 

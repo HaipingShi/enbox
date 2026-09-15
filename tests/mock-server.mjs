@@ -1,13 +1,14 @@
 import http from 'node:http';
 
 // 本地 mock：OpenAI 兼容 /chat/completions，返回 SSE 流
-export function startMockServer(port = 0) {
+export function startMockServer(port = 0, onRequest = () => {}) {
   return new Promise((resolve) => {
     const srv = http.createServer((req, res) => {
       if (req.method === 'POST' && req.url.endsWith('/chat/completions')) {
         let body = '';
         req.on('data', (c) => (body += c));
         req.on('end', () => {
+          onRequest(JSON.parse(body));
           res.writeHead(200, { 'content-type': 'text/event-stream' });
           const chunks = [
             'Hello',
