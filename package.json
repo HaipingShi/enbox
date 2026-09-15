@@ -1,0 +1,17 @@
+{
+  "name": "enbox",
+  "productName": "EnBox",
+  "version": "0.1.0",
+  "description": "中文想法 → 地道英文的悬浮翻译盒",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/test-sse.mjs",
+    "package": "electron-packager . EnBox --out=dist --icon=assets/enbox.icns --app-bundle-id=com.geesh.enbox --prune --overwrite",
+    "package:win": "electron-packager . EnBox --platform=win32 --arch=x64 --out=dist --icon=assets/enbox.ico --app-bundle-id=com.geesh.enbox --prune --overwrite"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.0.0",
+    "electron": "^37.0.0"
+  }
+}
