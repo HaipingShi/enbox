@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, clipboard, globalShortcut, Menu, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, clipboard, globalShortcut, Menu, Tray, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const { streamChat } = require('./lib/sse');
@@ -25,6 +25,7 @@ const DEFAULTS = {
 };
 
 let win = null;
+let tray = null;
 let quitting = false;
 let view = 'main'; // main | ball | docked
 let savedBounds = null;
@@ -55,6 +56,34 @@ function setBoundsSafe(r) {
 
 function workAreaOf(b) {
   return screen.getDisplayNearestPoint({ x: b.x, y: b.y }).workArea;
+}
+
+// 断言「置顶 + 跨全部空间（含全屏应用）」，在显示/移动后重复调用兜底
+function keepFloating() {
+  if (!win) return;
+  win.setAlwaysOnTop(config.alwaysOnTop !== false, 'floating');
+  try {
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  } catch {}
+}
+
+// 菜单栏「显示主窗口」：任意状态下恢复完整窗口并聚焦
+function showMain() {
+  if (!win) return;
+  if (view !== 'main') expand();
+  keepFloating();
+  win.show();
+  win.focus();
+}
+
+// 菜单栏「浮球归位」：把折叠球移动到右上角固定位置，找不到浮球时兜底
+function homeBall() {
+  if (!win) return;
+  win.show();
+  if (view === 'main') fold();
+  keepFloating();
+  const wa = screen.getPrimaryDisplay().workArea;
+  setBoundsSafe({ ...win.getBounds(), x: wa.x + wa.width - 96, y: wa.y + 140 });
 }
 
 function dock(side) {
@@ -97,6 +126,7 @@ function expand() {
   r.y = Math.min(Math.max(r.y, wa.y), wa.y + wa.height - r.height);
   setBoundsSafe(r);
   view = 'main';
+  keepFloating();
   win.webContents.send('view', 'main');
 }
 
@@ -153,10 +183,9 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'ui', 'index.html'));
   win.once('ready-to-show', () => win.show());
   // 跨空间悬浮：桌面空间和全屏应用之上都可见
-  win.setAlwaysOnTop(config.alwaysOnTop !== false, 'floating');
-  try {
-    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  } catch {}
+  keepFloating();
+  // 空间切换/重组后可能丢失 canJoinAllSpaces 属性，每次显示时重新断言
+  win.on('show', keepFloating);
   win.on('moved', onMoved);
   win.on('move', saveBoundsSoon);
   win.on('resize', saveBoundsSoon);
@@ -172,6 +201,7 @@ function toggleWindow() {
   if (!win) return;
   if (win.isVisible()) win.hide();
   else {
+    keepFloating();
     win.show();
     win.focus();
   }
@@ -268,6 +298,24 @@ app.whenReady().then(() => {
   );
   try {
     app.dock.setIcon(path.join(__dirname, 'assets', 'icon.png'));
+  } catch {}
+  try {
+    tray = new Tray(path.join(__dirname, 'assets', 'tray.png'));
+    tray.setToolTip('EnBox');
+    tray.setContextMenu(
+      Menu.buildFromTemplate([
+        { label: '显示主窗口', click: showMain },
+        { label: '浮球归位', click: homeBall },
+        { type: 'separator' },
+        {
+          label: '退出 EnBox',
+          click: () => {
+            quitting = true;
+            app.quit();
+          },
+        },
+      ])
+    );
   } catch {}
   createWindow();
   const hk = process.platform === 'darwin' ? 'Control+Command+E' : 'Control+Alt+E';

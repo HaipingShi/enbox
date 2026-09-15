@@ -54,14 +54,18 @@ window.enbox.onView((v) => {
 });
 
 /* 小球/贴边条：手动拖拽 + 点击判定（拖动距离 <5px 视为点击 → 还原）
-   mousedown 里同步记录坐标，禁止 await，避免快速点击时 mouseup 抢在 IPC 之前 */
+   使用 Pointer Capture 确保拖拽结束事件必达，避免拖拽状态卡死导致浮球「跟鼠标跑」 */
 let ballDrag = null;
 let movePending = false;
-$('#ballView').addEventListener('mousedown', (e) => {
+const ballView = $('#ballView');
+ballView.addEventListener('pointerdown', (e) => {
   if (e.button !== 0) return;
   ballDrag = { sx: e.screenX, sy: e.screenY, moved: false };
+  try {
+    ballView.setPointerCapture(e.pointerId);
+  } catch {}
 });
-window.addEventListener('mousemove', (e) => {
+ballView.addEventListener('pointermove', (e) => {
   if (!ballDrag) return;
   const dx = e.screenX - ballDrag.sx;
   const dy = e.screenY - ballDrag.sy;
@@ -74,11 +78,18 @@ window.addEventListener('mousemove', (e) => {
     });
   }
 });
-window.addEventListener('mouseup', () => {
+function endBallDrag() {
   if (ballDrag && !ballDrag.moved) window.enbox.expand();
   ballDrag = null;
+}
+ballView.addEventListener('pointerup', endBallDrag);
+ballView.addEventListener('pointercancel', () => {
+  ballDrag = null;
 });
-$('#ballView').addEventListener('contextmenu', (e) => {
+window.addEventListener('blur', () => {
+  ballDrag = null;
+});
+ballView.addEventListener('contextmenu', (e) => {
   e.preventDefault();
   window.enbox.quit();
 });
