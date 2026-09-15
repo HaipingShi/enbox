@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; overflow: hidden; }
+  body {
+    position: relative;
+    background: #0a0c11;
+    color: #eef1f6;
+    font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+  }
+  .glow { position: absolute; inset: 0; pointer-events: none; }
+  .glow::before {
+    content: ''; position: absolute; width: 900px; height: 900px; left: -300px; top: -350px;
+    background: radial-gradient(circle, rgba(79,140,255,.30), transparent 62%);
+  }
+  .glow::after {
+    content: ''; position: absolute; width: 900px; height: 900px; right: -320px; bottom: -380px;
+    background: radial-gradient(circle, rgba(138,92,255,.28), transparent 62%);
+  }
+  .wrap { position: relative; display: flex; flex-direction: column; height: 100%; justify-content: space-between; }
+
+  /* ── header ── */
+  header { display: flex; align-items: center; gap: 26px; }
+  .logo {
+    width: 96px; height: 96px; border-radius: 24px; flex: none;
+    background: linear-gradient(135deg, #4f8cff, #8a5cff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px; font-weight: 800; color: #fff;
+    box-shadow: 0 12px 40px rgba(96,116,255,.45);
+  }
+  .name {
+    font-size: 64px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05;
+    background: linear-gradient(90deg, #ffffff, #c9d4ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { font-size: 25px; color: #aab4c8; margin-top: 8px; }
+  .tagline b { color: #eef1f6; font-weight: 600; }
+  .pill {
+    margin-left: auto; align-self: flex-start;
+    font-size: 21px; font-weight: 600; color: #9fe8c0;
+    border: 1.5px solid rgba(95,232,192,.4); border-radius: 999px;
+    padding: 9px 22px; background: rgba(95,232,192,.08); white-space: nowrap;
+  }
+
+  /* ── mock window ── */
+  .mock {
+    margin-top: 38px; border-radius: 22px; overflow: hidden;
+    background: #14161d; border: 1.5px solid rgba(255,255,255,.09);
+    box-shadow: 0 24px 70px rgba(0,0,0,.55);
+  }
+  .mock-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 22px; border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .dots { display: flex; gap: 8px; }
+  .dots i { width: 13px; height: 13px; border-radius: 50%; }
+  .dots i:nth-child(1) { background: #ff5f57; } .dots i:nth-child(2) { background: #febc2e; } .dots i:nth-child(3) { background: #28c840; }
+  .mock-logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, #4f8cff, #8a5cff);
+    font-size: 14px; font-weight: 800; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mock-title { font-size: 18px; font-weight: 600; color: #c9d0dd; }
+  .mock-btns { margin-left: auto; color: #5d6577; font-size: 18px; letter-spacing: 10px; }
+  .mock-body { padding: 20px 24px 24px; }
+  .in {
+    background: rgba(255,255,255,.055); border: 1.5px solid rgba(255,255,255,.10);
+    border-radius: 14px; padding: 16px 18px; font-size: 23px; line-height: 1.5; color: #dfe4ee;
+  }
+  .mid { display: flex; align-items: center; margin: 12px 2px; }
+  .hint { font-size: 16.5px; color: #5d6577; }
+  .btn {
+    margin-left: auto; background: linear-gradient(135deg, #4f8cff, #7a5cff);
+    color: #fff; font-size: 18px; font-weight: 700; border-radius: 10px; padding: 8px 22px;
+  }
+  .out-wrap {
+    background: rgba(255,255,255,.04); border: 1.5px solid rgba(255,255,255,.08);
+    border-radius: 14px; padding: 14px 18px 16px; position: relative;
+  }
+  .out-head { display: flex; align-items: center; margin-bottom: 8px; }
+  .status { font-size: 15.5px; color: #6b7688; }
+  .copy {
+    margin-left: auto; font-size: 15px; color: #9fe8c0;
+    border: 1.5px solid rgba(95,232,192,.35); background: rgba(95,232,192,.08);
+    padding: 3px 12px; border-radius: 8px; font-weight: 600;
+  }
+  .out { font-size: 22px; line-height: 1.5; color: #eef1f6; }
+  .notes { margin-top: 10px; font-size: 18.5px; line-height: 1.55; color: #97a2b8; }
+  .notes b { color: #c8b7ff; font-weight: 600; }
+
+  /* ── features ── */
+  .feats {
+    margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 28px;
+  }
+  .feat { display: flex; align-items: center; gap: 13px; font-size: 24.5px; color: #d7dcea; }
+  .feat .ic { font-size: 27px; flex: none; }
+  .feat b { color: #fff; font-weight: 650; }
+
+  /* ── footer ── */
+  footer {
+    margin-top: auto; padding-top: 30px;
+    border-top: 1.5px solid rgba(255,255,255,.08);
+    display: flex; align-items: center; gap: 30px;
+  }
+  .qr {
+    width: 132px; height: 132px; flex: none; border-radius: 16px; background: #fff; padding: 9px;
+  }
+  .qr img { width: 100%; height: 100%; display: block; }
+  .f-meta { display: flex; flex-direction: column; gap: 9px; }
+  .f-os { font-size: 22px; color: #98a1b3; }
+  .f-os b { color: #eef1f6; font-weight: 650; }
+  .f-url {
+    font-family: 'SF Mono', Menlo, monospace;
+    font-size: 29px; font-weight: 700; letter-spacing: -0.01em;
+    background: linear-gradient(90deg, #6ea2ff, #b08cff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .f-scan { font-size: 18.5px; color: #5d6577; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="wrap">
+    <header>
+      <div class="logo">En</div>
+      <div>
+        <div class="name">EnBox</div>
+        <div class="tagline">中文想法 → <b>可直接发给 AI 的地道英文</b>，顺便学英语</div>
+      </div>
+      <div class="pill">开源免费</div>
+    </header>
+
+    <section class="mock">
+      <div class="mock-head">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div class="mock-logo">En</div>
+        <div class="mock-title">EnBox</div>
+        <div class="mock-btns">📌 &nbsp;– &nbsp;✕</div>
+      </div>
+      <div class="mock-body">
+        <div class="in">React 列表页一进去就崩，报错 reading 'map'，帮我看看怎么办</div>
+        <div class="mid">
+          <span class="hint">Enter 发送 · ⌃⌘E 全局呼出 · 拖到屏幕边缘自动吸附</span>
+          <span class="btn">翻译</span>
+        </div>
+        <div class="out-wrap">
+          <div class="out-head">
+            <span class="status">完成 · 1.2s</span>
+            <span class="copy">✓ 已复制英文</span>
+          </div>
+          <div class="out">My React list page crashes right on load — "Cannot read properties of undefined (reading 'map')". Any idea what's wrong?</div>
+          <div class="notes"><b>💡</b> 「一进去就崩」地道说法：<b>crashes right on load</b>　<b>💡</b> 贴上报错原文，比描述现象更容易被定位</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="feats">
+      <div class="feat"><span class="ic">📋</span><span>译文<b>自动复制</b>，粘贴即走</span></div>
+      <div class="feat"><span class="ic">💡</span><span>逐句附<b>中文学习笔记</b>，边用边学</span></div>
+      <div class="feat"><span class="ic">🧲</span><span>悬浮<b>贴边折叠</b>，全局热键呼出</span></div>
+      <div class="feat"><span class="ic">🔌</span><span>兼容 <b>OpenAI 接口</b>，免费可用</span></div>
+    </section>
+
+    <footer>
+      <div class="qr"><img src="qr.png"></div>
+      <div class="f-meta">
+        <div class="f-url">github.com/HaipingShi/enbox</div>
+        <div class="f-os"><b>macOS · Windows</b> 双平台　|　开源免费 · MIT</div>
+        <div class="f-scan">扫码打开 GitHub 仓库，下载安装包</div>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
