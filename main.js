@@ -67,21 +67,31 @@ function keepFloating() {
   } catch {}
 }
 
+// 关键修复：先解除全空间绑定再显示，让窗口回到「当前」空间，随后重新断言跨空间。
+// 直接 show() 的 canJoinAllSpaces 窗口可能仍滞留在它上次所在的空间（macOS 已知怪癖），
+// 表现为「进程活着、浮球在所有屏幕上都看不见」。
+function showOnCurrentSpace() {
+  if (!win) return;
+  try {
+    win.setVisibleOnAllWorkspaces(false);
+  } catch {}
+  win.show();
+  win.focus();
+  keepFloating();
+}
+
 // 菜单栏「显示主窗口」：任意状态下恢复完整窗口并聚焦
 function showMain() {
   if (!win) return;
   if (view !== 'main') expand();
-  keepFloating();
-  win.show();
-  win.focus();
+  showOnCurrentSpace();
 }
 
 // 菜单栏「浮球归位」：把折叠球移动到右上角固定位置，找不到浮球时兜底
 function homeBall() {
   if (!win) return;
-  win.show();
   if (view === 'main') fold();
-  keepFloating();
+  showOnCurrentSpace();
   const wa = screen.getPrimaryDisplay().workArea;
   setBoundsSafe({ ...win.getBounds(), x: wa.x + wa.width - 96, y: wa.y + 140 });
 }
@@ -200,11 +210,7 @@ function createWindow() {
 function toggleWindow() {
   if (!win) return;
   if (win.isVisible()) win.hide();
-  else {
-    keepFloating();
-    win.show();
-    win.focus();
-  }
+  else showOnCurrentSpace();
 }
 
 ipcMain.handle('settings:get', () => config);
@@ -323,7 +329,7 @@ app.whenReady().then(() => {
     globalShortcut.register(hk, toggleWindow);
   } catch {}
   app.on('activate', () => {
-    if (win) win.show();
+    if (win) showOnCurrentSpace();
   });
 });
 
